@@ -1,0 +1,6 @@
+streamlit>=1.40
+anthropic>=0.40
+pymupdf
+python-pptx
+faster-whisper
+gTTS
