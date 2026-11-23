@@ -10,6 +10,9 @@ try:
 except Exception:
     KEY = os.getenv("ANTHROPIC_API_KEY")
 
+# Sem chave da IA, o app roda em MODO DEMONSTRAÇÃO (resultados de exemplo).
+DEMO = not KEY
+
 AUDIO = {"mp3", "wav", "m4a", "ogg", "flac"}
 VIDEO = {"mp4", "mov", "mkv", "webm"}
 MIME = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
@@ -35,6 +38,67 @@ FORMATS = {
     "image": ("Descrição das imagens",
         "Descreva, para uma pessoa que não enxerga as imagens anexas, as informações visuais relevantes (figuras, gráficos, tabelas, mapas, "
         "setas, cores com significado). Para cada imagem: tipo, o que mostra e o que é importante entender. Linguagem {lv}. " + RULES),
+}
+
+# ---------- dados do modo demonstração ----------
+DEMO_TEXT = (
+    "O ciclo da água é o movimento contínuo da água entre os oceanos, a atmosfera e os continentes. "
+    "Sob a ação do calor do Sol, a água dos rios, lagos e mares sofre evaporação e passa para o estado gasoso. "
+    "Ao subir, o vapor encontra temperaturas mais baixas e sofre condensação, formando as nuvens. "
+    "Quando as gotículas ficam pesadas, ocorre a precipitação, na forma de chuva, granizo ou neve. "
+    "Parte dessa água escoa pela superfície e volta aos rios; outra parte sofre infiltração no solo e abastece os lençóis freáticos."
+)
+DEMO_SEGS = [
+    (0.0, 4.5, "O ciclo da água é o movimento contínuo da água no planeta."),
+    (4.5, 9.0, "O calor do Sol faz a água dos rios e mares evaporar."),
+    (9.0, 14.0, "O vapor sobe, esfria e forma as nuvens."),
+    (14.0, 19.0, "Quando as gotas ficam pesadas, a chuva cai e a água volta aos rios e ao solo."),
+]
+DEMO_OUT = {
+    "simple": (
+        "A água da Terra está sempre se movendo. Esse caminho se chama ciclo da água.\n\n"
+        "O Sol esquenta a água dos rios, lagos e mares. A água vira vapor (água em forma de gás, que não vemos) e sobe. "
+        "Esse passo se chama evaporação.\n\n"
+        "Lá em cima, o ar é frio. O vapor esfria e vira gotinhas, que formam as nuvens. Esse passo se chama condensação.\n\n"
+        "Quando as gotinhas ficam pesadas, elas caem como chuva, granizo (pedrinhas de gelo) ou neve. Esse passo se chama precipitação.\n\n"
+        "A água da chuva corre para os rios ou entra na terra. Debaixo do chão, ela fica guardada nos lençóis freáticos (grandes reservas de água subterrânea)."
+    ),
+    "bullets": (
+        "- O ciclo da água é o movimento contínuo da água entre oceanos, ar e terra.\n"
+        "- O calor do Sol faz a água evaporar e virar vapor.\n"
+        "- O vapor esfria, condensa e forma as nuvens.\n"
+        "- As gotas pesadas caem como chuva, granizo ou neve (precipitação).\n"
+        "- A água escorre para os rios ou se infiltra no solo e abastece os lençóis freáticos."
+    ),
+    "glossary": (
+        "evaporação: quando a água líquida esquenta e vira vapor.\n"
+        "condensação: quando o vapor esfria e volta a ser gotinhas de água.\n"
+        "precipitação: água que cai das nuvens, como chuva, granizo ou neve.\n"
+        "infiltração: quando a água entra devagar no solo.\n"
+        "lençol freático: reserva de água que fica guardada debaixo da terra.\n"
+        "atmosfera: camada de ar que envolve a Terra."
+    ),
+    "questions": (
+        "1. O que é o ciclo da água?\nResposta esperada: o movimento contínuo da água entre oceanos, atmosfera e continentes.\n\n"
+        "2. O que faz a água evaporar?\nResposta esperada: o calor do Sol.\n\n"
+        "3. Como as nuvens se formam?\nResposta esperada: o vapor esfria e sofre condensação.\n\n"
+        "4. De que formas a água pode cair das nuvens?\nResposta esperada: chuva, granizo ou neve.\n\n"
+        "5. Para onde vai a água que infiltra no solo?\nResposta esperada: abastece os lençóis freáticos."
+    ),
+    "pictos": (
+        "🌍💧 A água sempre se move\n"
+        "☀️🌊⬆️ O Sol esquenta e a água sobe\n"
+        "☁️❄️ O vapor esfria e vira nuvem\n"
+        "🌧️⬇️ A água cai como chuva\n"
+        "🏞️🌱 A água volta aos rios e ao solo"
+    ),
+    "image": (
+        "Imagem 1: esquema (desenho explicativo) do ciclo da água. Mostra, da esquerda para a direita, o mar, o Sol no alto, "
+        "nuvens no céu e montanhas com um rio descendo até o mar. Setas azuis sobem do mar até as nuvens e indicam a evaporação. "
+        "Setas cinzas ao lado das nuvens indicam a condensação. Setas com gotas descem das nuvens e indicam a precipitação. "
+        "O que é importante entender: o ciclo não tem começo nem fim, a água sempre volta ao mar e recomeça o caminho.\n\n"
+        "(Exemplo de demonstração: no modo com IA, a descrição é gerada a partir da imagem enviada.)"
+    ),
 }
 
 # ---------- estilo ----------
@@ -68,9 +132,9 @@ button:focus-visible,textarea:focus-visible{{outline:3px solid #1d2a44!important
 <div class="sub">O mesmo conteúdo, no formato de que cada estudante precisa.</div></div>""", unsafe_allow_html=True)
 st.caption("A IA apoia o trabalho pedagógico. Ela não substitui professores, profissionais do AEE, intérpretes de Libras ou revisores. Toda adaptação precisa de revisão humana.")
 
-if not KEY:
-    st.error("Chave da IA não encontrada. Defina ANTHROPIC_API_KEY em Secrets (veja o README).")
-    st.stop()
+if DEMO:
+    st.info("🧪 Modo demonstração: este protótipo mostra resultados de exemplo (tema: ciclo da água). "
+            "Qualquer arquivo enviado carrega o mesmo material de exemplo.")
 
 # ---------- funções ----------
 @st.cache_resource
@@ -78,7 +142,9 @@ def client():
     import anthropic
     return anthropic.Anthropic(api_key=KEY)
 
-def ask(prompt, imgs=()):
+def ask(prompt, imgs=(), kind=None):
+    if DEMO:
+        return DEMO_OUT.get(kind, "")
     content = [{"type": "image", "source": {"type": "base64", "media_type": m, "data": base64.b64encode(b).decode()}}
                for b, m in list(imgs)[:6] if m in MIME.values() or m == "image/gif"]
     content.append({"type": "text", "text": prompt})
@@ -151,16 +217,24 @@ with tabs[0]:
             b = src.getvalue(); S.name = src.name
             ext = src.name.rsplit(".", 1)[-1].lower() if "." in src.name else "jpg"
             try:
-                with st.spinner("Lendo o material… vídeos e áudios podem levar alguns minutos."):
-                    if ext == "pdf": S.text, S.imgs = read_pdf(b)
-                    elif ext == "pptx": S.text, S.imgs = read_pptx(b)
-                    elif ext in MIME: S.imgs = [(b, MIME[ext])]
+                if DEMO:
+                    # Modo demonstração: não processa o arquivo, usa o material de exemplo.
+                    S.text = DEMO_TEXT
+                    if ext in MIME: S.imgs = [(b, MIME[ext])]
                     elif ext in AUDIO | VIDEO:
-                        S.segs = transcribe(b, ext); S.text = " ".join(t for _, _, t in S.segs)
+                        S.segs = list(DEMO_SEGS)
                         S.media = (b, "audio" if ext in AUDIO else "video")
-                    if len(S.text) < 80 and S.imgs:
-                        S.text = ask("Transcreva fielmente todo o texto visível nas imagens, na ordem de leitura, sem resumir nem corrigir. "
-                                     "Marque [figura] onde houver figuras. Responda só com o texto.", S.imgs)
+                else:
+                    with st.spinner("Lendo o material… vídeos e áudios podem levar alguns minutos."):
+                        if ext == "pdf": S.text, S.imgs = read_pdf(b)
+                        elif ext == "pptx": S.text, S.imgs = read_pptx(b)
+                        elif ext in MIME: S.imgs = [(b, MIME[ext])]
+                        elif ext in AUDIO | VIDEO:
+                            S.segs = transcribe(b, ext); S.text = " ".join(t for _, _, t in S.segs)
+                            S.media = (b, "audio" if ext in AUDIO else "video")
+                        if len(S.text) < 80 and S.imgs:
+                            S.text = ask("Transcreva fielmente todo o texto visível nas imagens, na ordem de leitura, sem resumir nem corrigir. "
+                                         "Marque [figura] onde houver figuras. Responda só com o texto.", S.imgs)
                 S.mats += 1
                 st.success("Material lido. Confira o texto abaixo antes de adaptar.")
             except Exception as e:
@@ -177,12 +251,12 @@ with tabs[1]:
     st.caption("Transcrição e legendas são geradas ao enviar vídeo ou áudio, na aba Enviar.")
     if st.button("Gerar adaptações", type="primary", disabled=not (S.text or S.imgs)):
         for k in sel:
-            if k == "image" and not S.imgs: st.warning("Para descrever imagens, envie PDF, apresentação ou foto."); continue
+            if k == "image" and not S.imgs and not DEMO: st.warning("Para descrever imagens, envie PDF, apresentação ou foto."); continue
             if k != "image" and not S.text.strip(): st.warning("Não há texto para adaptar."); continue
             t0 = time.time()
             try:
                 with st.spinner(f"Gerando: {FORMATS[k][0]}…"):
-                    S.out[k] = S.orig[k] = ask(FORMATS[k][1].format(lv=LV, t=S.text), S.imgs if k == "image" else ())
+                    S.out[k] = S.orig[k] = ask(FORMATS[k][1].format(lv=LV, t=S.text), S.imgs if k == "image" else (), k)
                 S.rev[k] = False
                 for p in ("t_", "r_"): S.pop(p + k, None)
                 S.log.append({"formato": FORMATS[k][0], "segundos": round(time.time() - t0, 1)})
@@ -217,7 +291,8 @@ with tabs[3]:
         st.download_button("Baixar todas as adaptações (.txt)", pack, "adaptacoes.txt")
 
 with tabs[4]:
-    st.write("Indicadores medidos nesta sessão (nada é estimado).")
+    st.write("Indicadores medidos nesta sessão (nada é estimado)." if not DEMO
+             else "Indicadores desta sessão de demonstração (os tempos de geração não representam o uso real com IA).")
     ed = sum(1 for x in S.out if S.out[x].strip() != S.orig.get(x, "").strip())
     c = st.columns(2)
     c[0].metric("Materiais lidos", S.mats); c[1].metric("Adaptações geradas", len(S.log))
@@ -232,6 +307,6 @@ with tabs[5]:
 
 **Exige pessoas:** revisão do conteúdo; tradução para **Libras** (intérprete); conversão para **Braille** (profissional especializado); validação dos apoios visuais.
 
-**Privacidade (LGPD):** os arquivos são enviados à API da Anthropic (texto e imagens) e o texto narrado ao Google (gTTS). Não envie dados pessoais de estudantes. Defina prazo de retenção e consentimento antes de um piloto.
+**Privacidade (LGPD):** com a IA ativada, os arquivos são enviados à API da Anthropic (texto e imagens) e o texto narrado ao Google (gTTS). No modo demonstração, nenhum arquivo é enviado à IA, mas a narração em áudio ainda usa o Google. Não envie dados pessoais de estudantes. Defina prazo de retenção e consentimento antes de um piloto.
 
 **Transparência:** todo conteúdo gerado é marcado como IA e pode ser editado ou recusado pelo revisor.""")
